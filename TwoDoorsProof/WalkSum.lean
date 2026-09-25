@@ -1,6 +1,7 @@
 import TwoDoorsProof.Basic
 import Mathlib.Combinatorics.SimpleGraph.Walk.Counting
 import Mathlib.Algebra.BigOperators.Group.Finset.Basic
+import Mathlib.Data.List.Palindrome
 
 /-!
 # Weighted walks and the involution cancellation lemma
@@ -36,6 +37,89 @@ def walkSum [CommRing R] (z : Sym2 V → R) (d : ℕ) : R :=
 def pathSum [CommRing R] (z : Sym2 V → R) (d : ℕ) : R :=
   ∑ p ∈ targetPaths G s t a b d, walkWeight G s t z p
 
+private def AdjacentNe (l : List V) : Prop :=
+  l.IsChain (fun x y => x ≠ y)
+
+private theorem adjacentNe_of_isChain
+    {l : List V} (h : l.IsChain G.Adj) :
+    AdjacentNe l := by
+  exact h.imp fun _ _ hadj hxy => G.loopless.irrefl _ (hxy ▸ hadj)
+
+private theorem palindrome_length_odd_of_adjacentNe
+    {l : List V} (hp : l.reverse = l)
+    (ha : AdjacentNe l) (hne : l ≠ []) :
+    Odd l.length := by
+  have hp' : l.Palindrome := List.Palindrome.of_reverse_eq hp
+  induction hp' with
+  | nil => exact (hne rfl).elim
+  | singleton x => simp
+  | @cons_concat x l hpal ih =>
+      have hnonempty : l ≠ [] := by
+        intro hl
+        subst l
+        simpa [AdjacentNe] using ha
+      have hal : AdjacentNe l := by
+        simpa [AdjacentNe] using ha.tail.left_of_append
+      have hmid : Odd l.length := ih hpal.reverse_eq hal hnonempty
+      rcases hmid with ⟨k, hk⟩
+      refine ⟨k + 1, ?_⟩
+      simp [List.length_append]
+      omega
+
+private theorem palindrome_count_even_of_even_length
+    {l : List V} (hp : l.reverse = l)
+    (hlen : Even l.length) (e : V) :
+    Even (l.count e) := by
+  have hp' : l.Palindrome := List.Palindrome.of_reverse_eq hp
+  induction hp' with
+  | nil => simp
+  | singleton x => simp at hlen
+  | @cons_concat x l hpal ih =>
+      have hmid : Even l.length := by
+        rcases hlen with ⟨k, hk⟩
+        refine ⟨k - 1, ?_⟩
+        simp [List.length_append] at hk
+        omega
+      have hcount := ih hpal.reverse_eq hmid
+      rcases hcount with ⟨k, hk⟩
+      by_cases hxe : x = e
+      · subst e
+        refine ⟨k + 1, ?_⟩
+        simp [List.count_append, hk]
+        omega
+      · refine ⟨k, ?_⟩
+        simp [List.count_append, hxe, hk]
+
+theorem palindrome_closed_segment_special_count_even
+    {u : V} (loop : G.Walk u u)
+    (hpal : loop.support.reverse = loop.support) (e : Sym2 V) :
+    Even (loop.edges.count e) := by
+  have hwalk : loop.reverse = loop := by
+    apply Walk.ext_support
+    simpa [Walk.support_reverse, hpal]
+  have hedges : loop.edges.reverse = loop.edges := by
+    rw [← Walk.edges_reverse, hwalk]
+  have hlen : Even loop.edges.length := by
+    have hodd : Odd loop.support.length :=
+      palindrome_length_odd_of_adjacentNe
+        (l := loop.support) hpal (adjacentNe_of_isChain (G := G) loop.isChain_adj_support)
+        loop.support_ne_nil
+    rcases hodd with ⟨k, hk⟩
+    refine ⟨k, ?_⟩
+    rw [SimpleGraph.Walk.length_edges]
+    have hs := SimpleGraph.Walk.length_support loop
+    omega
+  exact palindrome_count_even_of_even_length hedges hlen e
+
+theorem palindrome_closed_segment_cannot_contain_unique_edge
+    {u : V} (loop : G.Walk u u)
+    (hpal : loop.support.reverse = loop.support) (e : Sym2 V)
+    (hcount : loop.edges.count e = 1) : False := by
+  have heven := palindrome_closed_segment_special_count_even (G := G) loop hpal e
+  rw [hcount] at heven
+  rcases heven with ⟨k, hk⟩
+  omega
+
 section Flip
 
 variable {G s t} {u : V}
@@ -45,6 +129,37 @@ including their multiplicities; no immediate backtrack is forbidden. -/
 def flipClosed (pre : G.Walk s u) (loop : G.Walk u u)
     (suffix : G.Walk u t) : G.Walk s t :=
   (pre.append loop.reverse).append suffix
+
+theorem flipClosed_support
+    (pre : G.Walk s u) (loop : G.Walk u u) (suffix : G.Walk u t) :
+    (flipClosed pre loop suffix).support =
+      pre.support ++ loop.support.reverse.tail ++ suffix.support.tail := by
+  simp [flipClosed, SimpleGraph.Walk.support_append, SimpleGraph.Walk.support_reverse]
+
+theorem flipClosed_ne_of_not_palindrome
+    (pre : G.Walk s u) (loop : G.Walk u u) (suffix : G.Walk u t)
+    (hloop : loop.support.reverse ≠ loop.support) :
+    flipClosed pre loop suffix ≠ (pre.append loop).append suffix := by
+  intro h
+  have hs := congrArg SimpleGraph.Walk.support h
+  rw [flipClosed_support, SimpleGraph.Walk.support_append,
+    SimpleGraph.Walk.support_append] at hs
+  rw [List.append_assoc, List.append_assoc] at hs
+  have htail :
+      loop.support.reverse.tail ++ suffix.support.tail =
+        loop.support.tail ++ suffix.support.tail := by
+    exact List.append_right_injective pre.support hs
+  have htail' : loop.support.reverse.tail = loop.support.tail :=
+    List.append_left_injective suffix.support.tail htail
+  apply hloop
+  have htail'' : loop.reverse.support.tail = loop.support.tail := by
+    simpa [SimpleGraph.Walk.support_reverse] using htail'
+  calc
+    loop.support.reverse = loop.reverse.support := by
+      simp [SimpleGraph.Walk.support_reverse]
+    _ = u :: loop.reverse.support.tail := (loop.reverse.cons_tail_support).symm
+    _ = u :: loop.support.tail := by rw [htail'']
+    _ = loop.support := loop.cons_tail_support
 
 theorem flipClosed_twice (pre : G.Walk s u) (loop : G.Walk u u)
     (suffix : G.Walk u t) :
