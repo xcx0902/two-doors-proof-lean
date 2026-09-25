@@ -3,3 +3,4 @@
 import TwoDoorsProof.Basic
 import TwoDoorsProof.WalkSum
 import TwoDoorsProof.Determinant
+import TwoDoorsProof.Shortest

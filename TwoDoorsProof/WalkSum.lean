@@ -36,6 +36,42 @@ def walkSum [CommRing R] (z : Sym2 V → R) (d : ℕ) : R :=
 def pathSum [CommRing R] (z : Sym2 V → R) (d : ℕ) : R :=
   ∑ p ∈ targetPaths G s t a b d, walkWeight G s t z p
 
+section Flip
+
+variable {G s t} {u : V}
+
+/-- Reverse a closed segment in place. The same undirected edges are used,
+including their multiplicities; no immediate backtrack is forbidden. -/
+def flipClosed (pre : G.Walk s u) (loop : G.Walk u u)
+    (suffix : G.Walk u t) : G.Walk s t :=
+  (pre.append loop.reverse).append suffix
+
+theorem flipClosed_twice (pre : G.Walk s u) (loop : G.Walk u u)
+    (suffix : G.Walk u t) :
+    flipClosed pre loop.reverse suffix = (pre.append loop).append suffix := by
+  simp [flipClosed]
+
+theorem flipClosed_length (pre : G.Walk s u) (loop : G.Walk u u)
+    (suffix : G.Walk u t) :
+    (flipClosed pre loop suffix).length =
+      ((pre.append loop).append suffix).length := by
+  simp [flipClosed, SimpleGraph.Walk.length_append]
+
+theorem flipClosed_count (pre : G.Walk s u) (loop : G.Walk u u)
+    (suffix : G.Walk u t) (e : Sym2 V) :
+    (flipClosed pre loop suffix).edges.count e =
+      ((pre.append loop).append suffix).edges.count e := by
+  simp [flipClosed, List.count_append, List.count_reverse]
+
+theorem flipClosed_weight [CommMonoid R] (z : Sym2 V → R)
+    (pre : G.Walk s u) (loop : G.Walk u u)
+    (suffix : G.Walk u t) :
+    walkWeight G s t z (flipClosed pre loop suffix) =
+      walkWeight G s t z ((pre.append loop).append suffix) := by
+  simp [flipClosed, walkWeight, List.prod_append, List.prod_reverse]
+
+end Flip
+
 /-- Abstract parity cancellation, with exactly the four properties supplied by
 the palindrome-contraction/reversal construction in the editorial. -/
 theorem nonpath_sum_zero [CommRing R] (h₂ : ∀ x : R, x + x = 0)
