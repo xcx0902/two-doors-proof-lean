@@ -2,5 +2,6 @@
 -- Import modules here that should be built as part of the library.
 import TwoDoorsProof.Basic
 import TwoDoorsProof.WalkSum
+import TwoDoorsProof.Palindrome
 import TwoDoorsProof.Determinant
 import TwoDoorsProof.Shortest
