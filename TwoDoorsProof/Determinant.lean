@@ -1,5 +1,6 @@
 import Mathlib.LinearAlgebra.Matrix.Adjugate
 import Mathlib.LinearAlgebra.Matrix.RowCol
+import Mathlib.RingTheory.Polynomial.Basic
 
 /-!
 # The marked directed edge in the determinant argument
@@ -109,6 +110,35 @@ theorem det_add_directed_edge (Q : Matrix V V R) (s t : V) (y : R) :
     ext i
     simp [Pi.single_apply, smul_eq_mul, mul_ite]
   rw [hs, Matrix.det_updateRow_smul, Matrix.adjugate_apply]
+
+theorem marked_determinant_coeff_one (Q : Matrix V V R) (s t : V) :
+    (Matrix.det (Q.map Polynomial.C + Matrix.single t s Polynomial.X)).coeff 1 =
+      Q.adjugate s t := by
+  have h := det_add_directed_edge (R := Polynomial R) (Q.map Polynomial.C)
+    s t Polynomial.X
+  have h' := congrArg (fun p : Polynomial R => p.coeff 1) h
+  have hmap (M : Matrix V V R) :
+      (M.map Polynomial.C).det = Polynomial.C M.det := by
+    simpa using (RingHom.map_det (Polynomial.C : R →+* Polynomial R) M).symm
+  have hdet0 : (Q.map Polynomial.C).det.coeff 1 = 0 := by
+    rw [hmap]
+    simp
+  have hrow :
+      (Q.map Polynomial.C).updateRow t (Pi.single s 1) =
+        (Q.updateRow t (Pi.single s 1)).map Polynomial.C := by
+    ext i j
+    by_cases hi : i = t
+    · subst i
+      by_cases hj : s = j <;> simp [Matrix.updateRow_apply, Pi.single_apply, hj]
+    · simp [Matrix.updateRow_apply, hi]
+  have hrowdet :
+      ((Q.map Polynomial.C).updateRow t (Pi.single s 1)).det.coeff 0 =
+        (Q.updateRow t (Pi.single s 1)).det := by
+    rw [hrow, hmap]
+    simp
+  rw [Matrix.adjugate_apply] at h'
+  rw [Polynomial.coeff_add, Polynomial.coeff_X_mul, hdet0, hrowdet, zero_add] at h'
+  simpa [Matrix.adjugate_apply] using h'
 
 /-- The adjugate identity used before expanding the determinant into cycles.
 No nonsingularity is assumed: this is an identity over any commutative ring. -/
