@@ -76,18 +76,6 @@ def concreteDeterminantExpansionCertificate
         exact heq'.symm.trans (hwalkpath d hd)
     }
 
-theorem concrete_determinant_certificate_exists
-    (dStar : ℕ)
-    (hab : a ≠ b)
-    (hshort : IsShortestTargetPath (G := G) (s := s) (t := t)
-      (a := a) (b := b) dStar) :
-    ∃ h :
-      DeterminantExpansionCertificate
-        (G := G) (s := s) (t := t) (a := a) (b := b)
-        (MvPolynomial.X : Sym2 V → MvPolynomial (Sym2 V) (ZMod 2)) dStar, True := by
-  obtain ⟨_, _, _, hmin⟩ := hshort
-  exact ⟨concreteDeterminantExpansionCertificate dStar hab hmin, trivial⟩
-
 theorem first_nonzero_of_concrete_determinant
     (dStar : ℕ) (hab : a ≠ b)
     (hshort : IsShortestTargetPath (G := G) (s := s) (t := t)
