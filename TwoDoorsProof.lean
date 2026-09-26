@@ -17,4 +17,7 @@ import TwoDoorsProof.PathComplement
 import TwoDoorsProof.FintypePath
 import TwoDoorsProof.PermutationTerms
 import TwoDoorsProof.CofactorPaths
+import TwoDoorsProof.PathCycleWeights
+import TwoDoorsProof.ComplementDenominator
+import TwoDoorsProof.DeterminantPathExpansion
 import TwoDoorsProof.ConcreteDeterminant

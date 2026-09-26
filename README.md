@@ -45,6 +45,15 @@ This project formalizes the proof architecture in `editorial.md`.
 - `TwoDoorsProof.CofactorPaths`: the direct characteristic-two cofactor
   expansion as a sum over simple path cycles and determinants of their
   complementary principal submatrices.
+- `TwoDoorsProof.PathCycleWeights`: resolvent submatrix identities, the
+  explicit power-series weight of a distinguished path cycle, and the
+  constant coefficient of a complementary resolvent determinant.
+- `TwoDoorsProof.ComplementDenominator`: the complementary determinant
+  comparison between marked and ordinary edge weights, including its
+  realization as a coefficientwise constant-marker image.
+- `TwoDoorsProof.DeterminantPathExpansion`: the complete marked cofactor
+  expansion into distinguished path weights and ordinary complementary
+  denominators.
 - `TwoDoorsProof.ConcreteDeterminant`: a fully constructed low-layer
   determinant certificate and the corresponding first-nonzero theorem.
 - `TwoDoorsProof.Shortest`: first-layer lemmas and the concrete palindrome
@@ -54,9 +63,11 @@ This project formalizes the proof architecture in `editorial.md`.
   multiset, its independent-variable monomial, and the nonzero first layer
   supplied by the concrete palindrome-reversal proof.
 
-The direct cofactor path/complement-determinant sum identity is formalized.
-The specialization of its path cycles to graph-walk edge weights and
-first-layer coefficient extraction is not yet formalized.
+The direct cofactor path/complement-determinant sum identity is formalized,
+including its specialization to the marked resolvent and ordinary
+complementary denominators. The upstream planar-grid duality and the
+finite-field implementation of the contest algorithm are intentionally
+outside this Lean development.
 The current concrete determinant certificate is proved from the already
 formalized palindrome-reversal cancellation at the low layers, while retaining
 the independent determinant generating identity. The upstream planar-grid
