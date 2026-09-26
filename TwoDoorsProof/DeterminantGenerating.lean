@@ -68,7 +68,8 @@ theorem ordinaryDenominator_constant_one
     PowerSeries.coeff 0 (ordinaryDenominator G a b z) = 1 :=
   resolvent_det_constant_one _
 
-theorem determinant_generating_identity [CharP R 2]
+theorem determinant_generating_identity
+    (h₂ : ∀ x : R, x + x = 0)
     (G : SimpleGraph V) [DecidableRel G.Adj]
     (s t : V) (a b : Sym2 V) (hab : a ≠ b)
     (z : Sym2 V → R) :
@@ -77,7 +78,7 @@ theorem determinant_generating_identity [CharP R 2]
         determinantNumerator G s t a b z := by
   have h := det_mul_geometric_eq_adjugate
     (weightedAdj G (markedEdgeWeight a b z)) s t
-  rw [marked_denominator_eq_ordinary G a b hab z,
+  rw [marked_denominator_eq_ordinary h₂ G a b hab z,
     ordinary_denominator_eq_map G a b z] at h
   have hcoeff := congrArg (markedCoeffSeries (R := R)) h
   rw [markedCoeffSeries_const_mul,

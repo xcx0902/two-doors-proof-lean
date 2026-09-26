@@ -30,6 +30,10 @@ This project formalizes the proof architecture in `editorial.md`.
 - `TwoDoorsProof.DeterminantGenerating`: coefficientwise extraction of the
   two markers and the actual determinant generating identity linking the
   target-walk series, ordinary denominator, and marked cofactor numerator.
+- `TwoDoorsProof.DeterminantPaths`: explicit list-level facts for the
+  permutation cycle containing the added directed edge.
+- `TwoDoorsProof.ConcreteDeterminant`: a fully constructed low-layer
+  determinant certificate and the corresponding first-nonzero theorem.
 - `TwoDoorsProof.Shortest`: first-layer lemmas and the concrete palindrome
   reversal certificate; the determinant/path expansion certificate is still
   an unconstructed assumption.
@@ -37,9 +41,11 @@ This project formalizes the proof architecture in `editorial.md`.
   multiset, its independent-variable monomial, and the nonzero first layer
   supplied by the concrete palindrome-reversal proof.
 
-The cofactor numerator's path/complement-matching expansion, its resulting
-concrete shortest-layer certificate, and the upstream planar-grid duality are
-not yet formalized. The second proof is therefore still incomplete.
+The direct cofactor path/complement-matching bijection is not yet formalized.
+The current concrete determinant certificate is proved from the already
+formalized palindrome-reversal cancellation at the low layers, while retaining
+the independent determinant generating identity. The upstream planar-grid
+duality is also not yet formalized.
 
 Build with:
 

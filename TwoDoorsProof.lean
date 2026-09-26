@@ -12,3 +12,5 @@ import TwoDoorsProof.MatrixWalk
 import TwoDoorsProof.MatrixSeries
 import TwoDoorsProof.DeterminantMatching
 import TwoDoorsProof.DeterminantGenerating
+import TwoDoorsProof.DeterminantPaths
+import TwoDoorsProof.ConcreteDeterminant

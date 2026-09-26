@@ -77,7 +77,8 @@ theorem markedEdgeWeight_sq_zero_of_difference
     by simp [ordinaryMarkedEdgeWeight, hspec]⟩
 
 theorem marked_denominator_eq_ordinary
-    [CharP R 2] (G : SimpleGraph V) [DecidableRel G.Adj]
+    (h₂ : ∀ x : R, x + x = 0)
+    (G : SimpleGraph V) [DecidableRel G.Adj]
     (a b : Sym2 V) (hab : a ≠ b) (z : Sym2 V → R) :
     (matrixResolvent (weightedAdj G (markedEdgeWeight a b z))).det =
       (matrixResolvent (weightedAdj G
@@ -92,7 +93,7 @@ theorem marked_denominator_eq_ordinary
     weightedAdj_symmetric G (ordinaryMarkedEdgeWeight a b z)
   have h₂marked : ∀ x : Marked R, x + x = 0 := by
     intro x
-    ext <;> simp [CharTwo.add_self_eq_zero]
+    ext <;> simp [h₂]
   have h₂series : ∀ x : (Marked R)⟦X⟧, x + x = 0 := by
     intro x
     apply PowerSeries.ext
