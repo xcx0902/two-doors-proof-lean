@@ -3,5 +3,6 @@
 import TwoDoorsProof.Basic
 import TwoDoorsProof.WalkSum
 import TwoDoorsProof.Palindrome
+import TwoDoorsProof.Contraction
 import TwoDoorsProof.Determinant
 import TwoDoorsProof.Shortest

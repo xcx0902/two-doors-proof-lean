@@ -31,7 +31,7 @@ private theorem lastIndex?_mem {a : α} :
             exact by simp [hax]
           · simp [hax] at h
 
-private theorem lastIndex?_none_iff {a : α} :
+theorem lastIndex?_none_iff {a : α} :
     ∀ {l : List α}, lastIndex? a l = none ↔ a ∉ l
   | [] => by simp [lastIndex?]
   | x :: xs => by
@@ -561,6 +561,52 @@ theorem scanNonpal_result_endpoint
       · rw [scanNonpal.eq_1] at hscan
         exact False.elim (by simpa [hp] using hscan)
 
+theorem scanNonpal_none_drop (l : List α) (p : ℕ) :
+    scanNonpal l p = none ↔ scanNonpal (l.drop p) 0 = none := by
+  induction hn : l.length - p using Nat.strong_induction_on generalizing l p with
+  | h n ih =>
+      by_cases hp : p < l.length
+      · have hp' : 0 < (l.drop p).length := by simp [List.length_drop]; omega
+        have hhead : (l.drop p)[0] = l[p] := by simp [List.getElem_drop]
+        have htail : (l.drop p).drop 1 = l.drop (p + 1) := by
+          rw [List.drop_drop]
+        conv_lhs => rw [scanNonpal.eq_1]
+        conv_rhs => rw [scanNonpal.eq_1]
+        simp only [hp, hp', ↓reduceDIte, hhead, htail]
+        cases hidx : lastIndex? l[p] (l.drop (p + 1)) with
+        | none =>
+            simp only [hidx]
+            have hnext := ih (l.length - (p + 1)) (by omega) l (p + 1) rfl
+            have hnext' := ih ((l.drop p).length - 1)
+              (by simp [List.length_drop]; omega) (l.drop p) 1 rfl
+            rw [htail] at hnext'
+            exact hnext.trans hnext'.symm
+        | some k =>
+            simp only [hidx, Nat.zero_add, Nat.sub_zero, List.drop_zero]
+            have hlen_eq : p + 1 + k - p + 1 = 1 + k + 1 := by omega
+            rw [hlen_eq]
+            by_cases hpali :
+                ((l.drop p).take (1 + k + 1)).reverse =
+                  (l.drop p).take (1 + k + 1)
+            · simp only [if_pos hpali]
+              have hnext := ih (l.length - (p + 1 + k + 1))
+                (by omega) l (p + 1 + k + 1) rfl
+              have hnext' := ih ((l.drop p).length - (1 + k + 1))
+                (by simp [List.length_drop]; omega) (l.drop p) (1 + k + 1) rfl
+              have hdrop :
+                  (l.drop p).drop (1 + k + 1) =
+                    l.drop (p + 1 + k + 1) := by
+                rw [List.drop_drop]
+                congr 1
+                omega
+              rw [hdrop] at hnext'
+              exact hnext.trans hnext'.symm
+            · simp only [if_neg hpali]
+              simp
+      · have hp' : l.drop p = [] := List.drop_eq_nil_of_le (by omega)
+        rw [scanNonpal.eq_1]
+        simp [hp, hp', scanNonpal]
+
 theorem scanNonpal_stable
     {l l' : List α} {start r q : ℕ}
     (hscan : scanNonpal l start = some (r, q))
@@ -939,6 +985,106 @@ theorem scanNonpal_flipWalkAt [DecidableEq V]
     rw [flipWalkAt_support w p q hpq.le hq hclosed]
     exact reverseInterval_middle hpq.le hq'
   exact scanNonpal_stable hscan hlen hpre hperm hleft hright hsuffix hsegment
+
+/-- Flip the first non-palindromic interval found by the scan. -/
+def flipFirstNonpal [DecidableEq V] (w : G.Walk s t)
+    (h : scanNonpal w.support 0 ≠ none) : G.Walk s t :=
+  let pq := (scanNonpal w.support 0).getD (0, 0)
+  have hscan : scanNonpal w.support 0 = some pq := by
+    cases hs : scanNonpal w.support 0 with
+    | none => exact False.elim (h hs)
+    | some ij =>
+        dsimp [pq]
+        rw [hs]
+        rfl
+  flipWalkAt w pq.1 pq.2 (scanned_interval_data w hscan).1.le
+    (scanned_interval_data w hscan).2.2.1
+
+theorem flipFirstNonpal_eq [DecidableEq V] (w : G.Walk s t)
+    (h : scanNonpal w.support 0 ≠ none) {p q : ℕ}
+    (hscan : scanNonpal w.support 0 = some (p, q)) :
+    flipFirstNonpal w h =
+      flipWalkAt w p q (scanned_interval_data w hscan).1.le
+        (scanned_interval_data w hscan).2.2.1 := by
+  simp [flipFirstNonpal, hscan]
+
+theorem flipFirstNonpal_support [DecidableEq V] (w : G.Walk s t)
+    (h : scanNonpal w.support 0 ≠ none) {p q : ℕ}
+    (hscan : scanNonpal w.support 0 = some (p, q)) :
+    (flipFirstNonpal w h).support = reverseInterval w.support p q := by
+  obtain ⟨hpq, hq, hclosed, _⟩ := scanned_interval_data w hscan
+  rw [flipFirstNonpal_eq w h hscan]
+  exact flipWalkAt_support w p q hpq.le hq hclosed
+
+theorem flipFirstNonpal_scan [DecidableEq V] (w : G.Walk s t)
+    (h : scanNonpal w.support 0 ≠ none) :
+    scanNonpal (flipFirstNonpal w h).support 0 =
+      scanNonpal w.support 0 := by
+  cases hscan : scanNonpal w.support 0 with
+  | none => exact False.elim (h hscan)
+  | some pq =>
+      rw [flipFirstNonpal_eq w h hscan]
+      exact scanNonpal_flipWalkAt w hscan
+
+theorem flipFirstNonpal_involutive [DecidableEq V] (w : G.Walk s t)
+    (h : scanNonpal w.support 0 ≠ none) :
+    flipFirstNonpal (flipFirstNonpal w h)
+        (by rw [flipFirstNonpal_scan w h]; exact h) = w := by
+  obtain ⟨pq, hscan⟩ : ∃ pq, scanNonpal w.support 0 = some pq := by
+    cases hs : scanNonpal w.support 0 with
+    | none => exact False.elim (h hs)
+    | some pq => exact ⟨pq, rfl⟩
+  obtain ⟨hpq, hq, hclosed, _⟩ := scanned_interval_data w hscan
+  have hscan' := flipFirstNonpal_scan w h
+  rw [hscan] at hscan'
+  apply Walk.ext_support
+  rw [flipFirstNonpal_support _ _ hscan',
+    flipFirstNonpal_support w h hscan,
+    reverseInterval_involutive hpq.le (by
+      rw [Walk.length_support]
+      omega)]
+
+theorem flipFirstNonpal_ne [DecidableEq V] (w : G.Walk s t)
+    (h : scanNonpal w.support 0 ≠ none) :
+    flipFirstNonpal w h ≠ w := by
+  cases hscan : scanNonpal w.support 0 with
+  | none => exact False.elim (h hscan)
+  | some pq =>
+      obtain ⟨hpq, hq, hclosed, hnonpal⟩ := scanned_interval_data w hscan
+      rw [flipFirstNonpal_eq w h hscan]
+      exact flipWalkAt_ne_of_nonpalindrome w pq.1 pq.2 hpq.le hq hclosed hnonpal
+
+theorem flipFirstNonpal_length [DecidableEq V] (w : G.Walk s t)
+    (h : scanNonpal w.support 0 ≠ none) :
+    (flipFirstNonpal w h).length = w.length := by
+  cases hscan : scanNonpal w.support 0 with
+  | none => exact False.elim (h hscan)
+  | some pq =>
+      obtain ⟨hpq, hq, hclosed, _⟩ := scanned_interval_data w hscan
+      rw [flipFirstNonpal_eq w h hscan]
+      exact flipWalkAt_length w pq.1 pq.2 hpq.le hq hclosed
+
+theorem flipFirstNonpal_count [DecidableEq V] (w : G.Walk s t)
+    (h : scanNonpal w.support 0 ≠ none) (e : Sym2 V) :
+    (flipFirstNonpal w h).edges.count e = w.edges.count e := by
+  cases hscan : scanNonpal w.support 0 with
+  | none => exact False.elim (h hscan)
+  | some pq =>
+      obtain ⟨hpq, hq, hclosed, _⟩ := scanned_interval_data w hscan
+      rw [flipFirstNonpal_eq w h hscan]
+      exact flipWalkAt_count w pq.1 pq.2 hpq.le hq hclosed e
+
+theorem flipFirstNonpal_weight [DecidableEq V] {R : Type*} [CommMonoid R]
+    (z : Sym2 V → R) (w : G.Walk s t)
+    (h : scanNonpal w.support 0 ≠ none) :
+    walkWeight G s t z (flipFirstNonpal w h) =
+      walkWeight G s t z w := by
+  cases hscan : scanNonpal w.support 0 with
+  | none => exact False.elim (h hscan)
+  | some pq =>
+      obtain ⟨hpq, hq, hclosed, _⟩ := scanned_interval_data w hscan
+      rw [flipFirstNonpal_eq w h hscan]
+      exact flipWalkAt_weight z w pq.1 pq.2 hpq.le hq hclosed
 
 end WalkIntervals
 

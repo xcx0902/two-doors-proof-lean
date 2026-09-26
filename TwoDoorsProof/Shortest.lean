@@ -1,5 +1,5 @@
 import TwoDoorsProof.WalkSum
-import TwoDoorsProof.Palindrome
+import TwoDoorsProof.Contraction
 import Mathlib.RingTheory.PowerSeries.Basic
 
 /-!
@@ -49,6 +49,36 @@ theorem not_isPath_of_repeated_getVert
     (p.length_support ▸ Nat.lt_add_one_of_le hi)
     (p.length_support ▸ Nat.lt_add_one_of_le hj) hget)
 
+private theorem targetNonpath_data {d : ℕ} {p : G.Walk s t}
+    (hp : p ∈ targetNonpaths G s t a b d) :
+    p.length = d ∧ p.edges.count a = 1 ∧ p.edges.count b = 1 ∧ ¬p.IsPath := by
+  have hnp := Finset.mem_filter.mp hp
+  have htw := Finset.mem_filter.mp hnp.1
+  have hmem : p ∈ (G.finsetWalkLength d s t : Set (G.Walk s t)) :=
+    Finset.mem_coe.mpr htw.1
+  rw [SimpleGraph.coe_finsetWalkLength_eq] at hmem
+  exact ⟨hmem, htw.2.1, htw.2.2, hnp.2⟩
+
+private theorem scanNonpal_ne_of_minimal
+    (dStar d : ℕ)
+    (hmin : ∀ q : G.Walk s t, IsTargetPath (a := a) (b := b) q →
+      dStar ≤ q.length)
+    (hd : d ≤ dStar) {p : G.Walk s t}
+    (hp : p ∈ targetNonpaths G s t a b d) :
+    scanNonpal p.support 0 ≠ none := by
+  obtain ⟨hlen, ha, hb, hnot⟩ := targetNonpath_data hp
+  intro hscan
+  obtain ⟨q, hpath, hqa, hqb, hlt⟩ :=
+    shorter_target_path_of_scanNonpal_none p hscan hnot a b ha hb
+  have hminimal := hmin q ⟨hpath, hqa, hqb⟩
+  omega
+
+private theorem not_isPath_of_scanNonpal_some (p : G.Walk s t)
+    {i j : ℕ} (hscan : scanNonpal p.support 0 = some (i, j)) :
+    ¬p.IsPath := by
+  obtain ⟨hij, hj, heq, _⟩ := scanned_interval_data p hscan
+  exact not_isPath_of_repeated_getVert (by omega) hj hij heq
+
 structure InvolutionCertificate [CommRing R] (z : Sym2 V → R) (d : ℕ) where
   pair : ∀ p ∈ targetNonpaths G s t a b d, G.Walk s t
   mem : ∀ p hp, pair p hp ∈ targetNonpaths G s t a b d
@@ -87,6 +117,65 @@ structure PalindromeReversalCertificate [CommRing R] (z : Sym2 V → R)
     (dStar : ℕ) where
   layer : ∀ d, d ≤ dStar → InvolutionCertificate (G := G) (s := s) (t := t)
     (a := a) (b := b) z d
+
+def palindrome_reversal_certificate_of_minimal
+    [CommRing R] (z : Sym2 V → R) (dStar : ℕ)
+    (hmin : ∀ q : G.Walk s t, IsTargetPath (a := a) (b := b) q →
+      dStar ≤ q.length) :
+    PalindromeReversalCertificate (G := G) (s := s) (t := t)
+      (a := a) (b := b) z dStar := by
+  refine ⟨fun d hd => ?_⟩
+  let pair : ∀ p ∈ targetNonpaths G s t a b d, G.Walk s t :=
+    fun p hp => flipFirstNonpal p
+      (scanNonpal_ne_of_minimal dStar d hmin hd hp)
+  refine {
+    pair := pair
+    mem := ?_
+    fixedFree := ?_
+    involutive := ?_
+    weight_preserved := ?_
+  }
+  · intro p hp
+    obtain ⟨hlen, ha, hb, _⟩ := targetNonpath_data hp
+    have hscan := scanNonpal_ne_of_minimal dStar d hmin hd hp
+    have hnp : ¬(pair p hp).IsPath := by
+      cases hs : scanNonpal p.support 0 with
+      | none => exact False.elim (hscan hs)
+      | some ij =>
+          have hs' : scanNonpal (pair p hp).support 0 = some ij := by
+            change scanNonpal (flipFirstNonpal p hscan).support 0 = some ij
+            rw [flipFirstNonpal_scan p hscan]
+            exact hs
+          exact not_isPath_of_scanNonpal_some (pair p hp) hs'
+    apply Finset.mem_filter.mpr
+    refine ⟨?_, hnp⟩
+    apply Finset.mem_filter.mpr
+    refine ⟨?_, ?_⟩
+    · have heq : (pair p hp).length = d := by
+        change (flipFirstNonpal p hscan).length = d
+        rw [flipFirstNonpal_length, hlen]
+      have hset : pair p hp ∈
+          (G.finsetWalkLength d s t : Set (G.Walk s t)) := by
+        rw [SimpleGraph.coe_finsetWalkLength_eq]
+        exact heq
+      exact Finset.mem_coe.mp hset
+    · constructor
+      · change (flipFirstNonpal p hscan).edges.count a = 1
+        rw [flipFirstNonpal_count, ha]
+      · change (flipFirstNonpal p hscan).edges.count b = 1
+        rw [flipFirstNonpal_count, hb]
+  · intro p hp
+    change flipFirstNonpal p
+      (scanNonpal_ne_of_minimal dStar d hmin hd hp) ≠ p
+    exact flipFirstNonpal_ne p _
+  · intro p hp
+    dsimp only [pair]
+    exact flipFirstNonpal_involutive p _
+  · intro p hp
+    change walkWeight G s t z
+      (flipFirstNonpal p (scanNonpal_ne_of_minimal dStar d hmin hd hp)) =
+        walkWeight G s t z p
+    exact flipFirstNonpal_weight z p _
 
 theorem first_nonzero_of_palindrome_reversal
     [CommRing R] (h₂ : ∀ x : R, x + x = 0) (z : Sym2 V → R)
