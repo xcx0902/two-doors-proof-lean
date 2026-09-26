@@ -62,6 +62,13 @@ theorem markConst_mul {R : Type*} [CommSemiring R] (x y : R) :
     markConst (x * y) = markConst x * markConst y := by
   simp [markConst]
 
+def markConstHom {R : Type*} [CommSemiring R] : R →+* Marked R where
+  toFun := markConst
+  map_zero' := rfl
+  map_one' := markConst_one
+  map_add' := by intros; simp [markConst]
+  map_mul' := markConst_mul
+
 def markedEdgeWeight {E R : Type*} [DecidableEq E] [CommSemiring R]
     (a b : E) (z : E → R) (e : E) : Marked R :=
   alpha ^ (if e = a then 1 else 0) *
@@ -92,6 +99,34 @@ theorem alpha_sq {R : Type*} [CommSemiring R] :
 
 theorem beta_sq {R : Type*} [CommSemiring R] :
     (beta : Marked R) ^ 2 = 0 := DualNumber.eps_pow_two
+
+theorem markedEdgeWeight_eq_const {E R : Type*} [DecidableEq E] [CommSemiring R]
+    (a b e : E) (z : E → R) (ha : e ≠ a) (hb : e ≠ b) :
+    markedEdgeWeight a b z e = markConst (z e) := by
+  simp [markedEdgeWeight, ha, hb]
+
+theorem markedEdgeWeight_sq_special {E R : Type*}
+    [DecidableEq E] [CommSemiring R]
+    (a b : E) (hab : a ≠ b) (z : E → R) (e : E)
+    (he : e = a ∨ e = b) :
+    (markedEdgeWeight a b z e) ^ 2 = 0 := by
+  rcases he with rfl | rfl
+  · have h : markedEdgeWeight e b z e =
+        (alpha : Marked R) * markConst (z e) := by
+      simp [markedEdgeWeight, hab]
+    rw [h]
+    calc
+      ((alpha : Marked R) * markConst (z e)) ^ 2 =
+          alpha ^ 2 * markConst (z e) ^ 2 := by ring
+      _ = 0 := by rw [alpha_sq]; simp
+  · have h : markedEdgeWeight a e z e =
+        (beta : Marked R) * markConst (z e) := by
+      simp [markedEdgeWeight, Ne.symm hab]
+    rw [h]
+    calc
+      ((beta : Marked R) * markConst (z e)) ^ 2 =
+          beta ^ 2 * markConst (z e) ^ 2 := by ring
+      _ = 0 := by rw [beta_sq]; simp
 
 theorem markedCoeff_one {R : Type*} [Semiring R] :
     markedCoeff (1 : Marked R) = 0 := rfl

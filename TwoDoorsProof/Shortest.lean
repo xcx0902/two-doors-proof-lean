@@ -225,7 +225,7 @@ structure DeterminantExpansionCertificate [CommRing R] (z : Sym2 V → R)
     seriesOf (walkSum' (G := G) (s := s) (t := t) (a := a) (b := b) z) *
       denominator = numerator
   numerator_coeff :
-    ∀ d, coeff d numerator =
+    ∀ d, d ≤ dStar → coeff d numerator =
       pathSum' (G := G) (s := s) (t := t) (a := a) (b := b) z d
 
 theorem first_nonzero_of_determinant_expansion
@@ -256,7 +256,7 @@ theorem first_nonzero_of_determinant_expansion
         hdet.denominator hdet.numerator d hdet.generating_identity
         hdet.denominator_constant hprev
       have hn : coeff d hdet.numerator = 0 := by
-        rw [hdet.numerator_coeff d, hp]
+        rw [hdet.numerator_coeff d (Nat.le_of_lt hd), hp]
       have : coeff d (seriesOf (walkSum' (G := G) (s := s) (t := t)
           (a := a) (b := b) z)) = 0 := heq.trans hn
       simpa [seriesOf, coeff_mk] using this
@@ -267,7 +267,7 @@ theorem first_nonzero_of_determinant_expansion
       hdet.denominator hdet.numerator dStar hdet.generating_identity
       hdet.denominator_constant (fun k hk => by
         simpa [seriesOf, coeff_mk] using hzero k hk)
-    rw [hdet.numerator_coeff dStar] at heq
+    rw [hdet.numerator_coeff dStar le_rfl] at heq
     have heq' :
         walkSum' (G := G) (s := s) (t := t) (a := a) (b := b) z dStar =
           pathSum' (G := G) (s := s) (t := t) (a := a) (b := b) z dStar := by

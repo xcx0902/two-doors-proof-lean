@@ -95,6 +95,61 @@ theorem det_eq_involutive_perm_sum (h₂ : ∀ x : R, x + x = 0)
   rw [hpart, Finset.sum_union hdisj,
     nonInvolutive_perm_sum_zero h₂ A hsymm, add_zero]
 
+private theorem involutive_perm_monomial_zero_of_pair
+    (A : Matrix V V R) (σ : Equiv.Perm V)
+    (hσ : σ⁻¹ = σ) (i : V) (hi : σ i ≠ i)
+    (hzero : A (σ i) i * A i (σ i) = 0) :
+    permMonomial A σ = 0 := by
+  let j := σ i
+  have hij : i ≠ j := Ne.symm hi
+  have hji : σ j = i := by
+    dsimp [j]
+    have h := σ.symm_apply_apply i
+    change σ.symm = σ at hσ
+    rw [hσ] at h
+    exact h
+  unfold permMonomial
+  have hsub : ({i, j} : Finset V) ⊆ Finset.univ := Finset.subset_univ _
+  rw [← Finset.prod_sdiff hsub, Finset.prod_pair hij]
+  rw [hji]
+  change (∏ x ∈ Finset.univ \ {i, j}, A (σ x) x) *
+    (A (σ i) i * A i (σ i)) = 0
+  rw [hzero, mul_zero]
+
+theorem involutive_perm_monomial_eq_of_square_zero_difference
+    (A B : Matrix V V R) (σ : Equiv.Perm V)
+    (hσ : σ⁻¹ = σ)
+    (hdiag : ∀ i, A i i = B i i)
+    (hzero : ∀ i j, A i j ≠ B i j →
+      A i j * A j i = 0 ∧ B i j * B j i = 0) :
+    permMonomial A σ = permMonomial B σ := by
+  by_cases hsame : ∀ i, A (σ i) i = B (σ i) i
+  · unfold permMonomial
+    exact Finset.prod_congr rfl (fun i _ => hsame i)
+  · obtain ⟨i, hi⟩ := not_forall.mp hsame
+    have hne : σ i ≠ i := by
+      intro heq
+      exact hi (by simpa only [heq] using hdiag i)
+    obtain ⟨ha, hb⟩ := hzero (σ i) i hi
+    rw [involutive_perm_monomial_zero_of_pair A σ hσ i hne ha,
+      involutive_perm_monomial_zero_of_pair B σ hσ i hne hb]
+
+theorem det_eq_of_symmetric_square_zero_difference
+    (h₂ : ∀ x : R, x + x = 0)
+    (A B : Matrix V V R)
+    (hA : ∀ i j, A i j = A j i)
+    (hB : ∀ i j, B i j = B j i)
+    (hdiag : ∀ i, A i i = B i i)
+    (hzero : ∀ i j, A i j ≠ B i j →
+      A i j * A j i = 0 ∧ B i j * B j i = 0) :
+    A.det = B.det := by
+  rw [det_eq_involutive_perm_sum h₂ A hA,
+    det_eq_involutive_perm_sum h₂ B hB]
+  apply Finset.sum_congr rfl
+  intro σ hσ
+  exact involutive_perm_monomial_eq_of_square_zero_difference A B σ
+    (Finset.mem_filter.mp hσ).2 hdiag hzero
+
 theorem det_add_directed_edge (Q : Matrix V V R) (s t : V) (y : R) :
     (Q + Matrix.single t s y).det = Q.det + y * Q.adjugate s t := by
   have hrow : Q + Matrix.single t s y =

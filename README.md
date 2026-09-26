@@ -23,6 +23,13 @@ This project formalizes the proof architecture in `editorial.md`.
   all fixed-length walks, including their formal-marker weights.
 - `TwoDoorsProof.MatrixSeries`: the formal matrix geometric series and the
   adjugate identity relating its entries to a determinant and cofactor.
+- `TwoDoorsProof.DeterminantMatching`: cancellation of changed square-zero
+  edge-pairs in symmetric characteristic-two determinants; the marked
+  determinant equals the ordinary-edge determinant, which has constant
+  coefficient one and is the image of a series over the base ring.
+- `TwoDoorsProof.DeterminantGenerating`: coefficientwise extraction of the
+  two markers and the actual determinant generating identity linking the
+  target-walk series, ordinary denominator, and marked cofactor numerator.
 - `TwoDoorsProof.Shortest`: first-layer lemmas and the concrete palindrome
   reversal certificate; the determinant/path expansion certificate is still
   an unconstructed assumption.
@@ -30,9 +37,9 @@ This project formalizes the proof architecture in `editorial.md`.
   multiset, its independent-variable monomial, and the nonzero first layer
   supplied by the concrete palindrome-reversal proof.
 
-The determinant path/matching expansion, its resulting concrete certificate,
-and the upstream planar-grid duality are not yet formalized. In particular,
-the current matrix identities alone do not complete the second proof.
+The cofactor numerator's path/complement-matching expansion, its resulting
+concrete shortest-layer certificate, and the upstream planar-grid duality are
+not yet formalized. The second proof is therefore still incomplete.
 
 Build with:
 

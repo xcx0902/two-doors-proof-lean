@@ -10,3 +10,5 @@ import TwoDoorsProof.Weights
 import TwoDoorsProof.Marked
 import TwoDoorsProof.MatrixWalk
 import TwoDoorsProof.MatrixSeries
+import TwoDoorsProof.DeterminantMatching
+import TwoDoorsProof.DeterminantGenerating
