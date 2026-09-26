@@ -35,6 +35,15 @@ structure DirectedPathList (s t : V) where
   first_is_s : first = s
   last_is_t : last = t
 
+theorem directedPathList_ext
+    {p q : DirectedPathList s t}
+    (hlist : p.list = q.list) (hfirst : p.first = q.first)
+    (hlast : p.last = q.last) : p = q := by
+  cases p
+  cases q
+  simp only [DirectedPathList.mk.injEq]
+  exact ⟨hlist, hfirst, hlast⟩
+
 def cycleOfPath (p : DirectedPathList s t) : Equiv.Perm V :=
   p.list.formPerm
 
@@ -229,6 +238,10 @@ def pathOfPerm (σ : Equiv.Perm V) (s t : V)
       first_is_s := rfl
       last_is_t := rfl }
 
+theorem pathOfPerm_list (σ : Equiv.Perm V) (s t : V)
+    (hst : s ≠ t) (hts : σ t = s) :
+    (pathOfPerm σ s t hst hts).list = σ.toList s := rfl
+
 def restrictedPerm (σ : Equiv.Perm V) (s t : V)
     (hst : s ≠ t) (hts : σ t = s) :
     complementPerm (pathOfPerm σ s t hst hts) := by
@@ -265,6 +278,47 @@ theorem perm_eq_pathComplement
   · rw [pathComplementPerm_apply_of_not_mem
       (pathOfPerm σ s t hst hts) (restrictedPerm σ s t hst hts) hx]
     exact restrictedPerm_apply σ s t hst hts hx
+
+theorem pathComplementPerm_apply_last
+    (p : DirectedPathList s t) (τ : complementPerm p) :
+    pathComplementPerm p τ p.last = p.first := by
+  have hlastmem : p.last ∈ p.list := by
+    rw [← p.last_eq]
+    exact List.getLast_mem p.nonempty
+  rw [pathComplementPerm_apply_mem p τ hlastmem, cycleOfPath_last]
+
+theorem pathComplementPerm_marked
+    (p : DirectedPathList s t) (τ : complementPerm p) :
+    pathComplementPerm p τ t = s := by
+  calc
+    pathComplementPerm p τ t =
+        pathComplementPerm p τ p.last := congrArg (pathComplementPerm p τ) p.last_is_t.symm
+    _ = p.first := pathComplementPerm_apply_last p τ
+    _ = s := p.first_is_s
+
+theorem pathOfPerm_pathComplement
+    (p : DirectedPathList s t) (τ : complementPerm p) (hst : s ≠ t) :
+    pathOfPerm (pathComplementPerm p τ) s t hst
+        (pathComplementPerm_marked p τ) = p := by
+  let σ := pathComplementPerm p τ
+  have hlist :
+      (pathOfPerm σ s t hst (pathComplementPerm_marked p τ)).list = p.list := by
+    rw [pathOfPerm_list]
+    change (pathComplementPerm p τ).toList s = p.list
+    calc
+      (pathComplementPerm p τ).toList s =
+          (pathComplementPerm p τ).toList p.first :=
+        congrArg (pathComplementPerm p τ).toList p.first_is_s.symm
+      _ = p.list := pathComplementPerm_toList p τ
+  have hfirst :
+      (pathOfPerm σ s t hst (pathComplementPerm_marked p τ)).first = p.first := by
+    rw [(pathOfPerm σ s t hst (pathComplementPerm_marked p τ)).first_is_s,
+      p.first_is_s]
+  have hlast :
+      (pathOfPerm σ s t hst (pathComplementPerm_marked p τ)).last = p.last := by
+    rw [(pathOfPerm σ s t hst (pathComplementPerm_marked p τ)).last_is_t,
+      p.last_is_t]
+  exact directedPathList_ext hlist hfirst hlast
 
 end
 end TwoDoorsProof
