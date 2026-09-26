@@ -1,6 +1,7 @@
 # two-doors-proof
 
-This project formalizes the proof architecture in `editorial.md`.
+This project formalizes the two first-nonzero-layer proofs from `editorial.md`
+for the already contracted simple dual graph.
 
 ## Modules
 
@@ -53,25 +54,30 @@ This project formalizes the proof architecture in `editorial.md`.
   realization as a coefficientwise constant-marker image.
 - `TwoDoorsProof.DeterminantPathExpansion`: the complete marked cofactor
   expansion into distinguished path weights and ordinary complementary
-  denominators.
-- `TwoDoorsProof.ConcreteDeterminant`: a fully constructed low-layer
-  determinant certificate and the corresponding first-nonzero theorem.
+  denominators; a bijection from admissible path lists to graph walks;
+  and a direct proof that the numerator's coefficients through the shortest
+  target length equal the corresponding sums of target-path weights.
+- `TwoDoorsProof.ConcreteDeterminant`: a low-layer certificate constructed
+  directly from the cofactor path expansion, with first-nonzero and
+  no-target-path theorems independent of the palindrome-reversal certificate.
 - `TwoDoorsProof.Shortest`: first-layer lemmas and the concrete palindrome
-  reversal certificate; the determinant/path expansion certificate is still
-  an unconstructed assumption.
+  reversal certificate, together with the generic determinant certificate
+  interface used by the direct construction.
 - `TwoDoorsProof.Weights`: uniqueness of a simple path from its undirected-edge
   multiset, its independent-variable monomial, and the nonzero first layer
-  supplied by the concrete palindrome-reversal proof.
+  for both first-nonzero proofs.
 
-The direct cofactor path/complement-determinant sum identity is formalized,
-including its specialization to the marked resolvent and ordinary
-complementary denominators. The upstream planar-grid duality and the
-finite-field implementation of the contest algorithm are intentionally
-outside this Lean development.
-The current concrete determinant certificate is proved from the already
-formalized palindrome-reversal cancellation at the low layers, while retaining
-the independent determinant generating identity. The upstream planar-grid
-duality is also not yet formalized.
+Both routes prove the same criterion over independent edge-weight variables:
+all shorter target-walk sums vanish, while the shortest target layer is a
+nonzero sum of distinct simple-path monomials. They also prove vanishing at
+every length when there is no target simple path. The determinant route obtains
+its numerator coefficients from the path/complement determinant expansion,
+not from the palindrome-reversal involution.
+
+The planar grid-to-dual correspondence, wall contraction and door
+preprocessing, randomized finite-field evaluation, and algorithmic complexity
+claims are outside this Lean development; its input is an already contracted
+simple graph with two distinct special edges.
 
 Build with:
 

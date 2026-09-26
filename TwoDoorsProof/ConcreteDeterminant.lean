@@ -1,4 +1,4 @@
-import TwoDoorsProof.DeterminantGenerating
+import TwoDoorsProof.DeterminantPathExpansion
 import TwoDoorsProof.Weights
 
 namespace TwoDoorsProof
@@ -17,23 +17,13 @@ private theorem polynomial_add_self_zero'
 
 def concreteDeterminantExpansionCertificate
     (dStar : ℕ)
-    (hab : a ≠ b)
+    (hst : s ≠ t) (hab : a ≠ b)
     (hmin : ∀ q : G.Walk s t, IsTargetPath (a := a) (b := b) q →
       dStar ≤ q.length) :
     DeterminantExpansionCertificate
       (G := G) (s := s) (t := t) (a := a) (b := b)
       (MvPolynomial.X : Sym2 V → MvPolynomial (Sym2 V) (ZMod 2)) dStar := by
   let z : Sym2 V → MvPolynomial (Sym2 V) (ZMod 2) := MvPolynomial.X
-  let hrev :=
-    palindrome_reversal_certificate_of_minimal
-      (G := G) (s := s) (t := t) (a := a) (b := b)
-      z dStar hmin
-  have hwalkpath : ∀ d, d ≤ dStar →
-      walkSum' (G := G) (s := s) (t := t) (a := a) (b := b) z d =
-        pathSum' (G := G) (s := s) (t := t) (a := a) (b := b) z d := by
-    intro d hd
-    exact walkSum_eq_pathSum_of_certificate
-      (polynomial_add_self_zero' (V := V)) z d (hrev.layer d hd)
   refine
     { numerator := determinantNumerator G s t a b z
       denominator := ordinaryDenominator G a b z
@@ -44,36 +34,9 @@ def concreteDeterminantExpansionCertificate
         (hab := hab) (z := z)
       numerator_coeff := by
         intro d hd
-        have hprev : ∀ k, k < d →
-            PowerSeries.coeff k
-                (seriesOf (walkSum' (G := G) (s := s) (t := t)
-                  (a := a) (b := b) z)) = 0 := by
-          intro k hk
-          have hpath : pathSum' (G := G) (s := s) (t := t)
-              (a := a) (b := b) z k = 0 := by
-            apply pathSum'_eq_zero_of_no_target_path z k
-            intro ⟨q, hq, hlen⟩
-            have := hmin q hq
-            omega
-          have hw :
-              walkSum' (G := G) (s := s) (t := t) (a := a) (b := b) z k = 0 :=
-            (hwalkpath k (by omega)).trans hpath
-          simpa [seriesOf, hw]
-        have heq := coeff_eq_of_mul_eq_of_previous_zero
-          (seriesOf (walkSum' (G := G) (s := s) (t := t)
-            (a := a) (b := b) z))
-          (ordinaryDenominator G a b z)
-          (determinantNumerator G s t a b z) d
-          (determinant_generating_identity
-            (h₂ := polynomial_add_self_zero' (V := V))
-            (G := G) (s := s) (t := t) (a := a) (b := b)
-            (hab := hab) (z := z))
-          (ordinaryDenominator_constant_one G a b z) hprev
-        have heq' :
-            walkSum' (G := G) (s := s) (t := t) (a := a) (b := b) z d =
-              PowerSeries.coeff d (determinantNumerator G s t a b z) := by
-          simpa [seriesOf] using heq
-        exact heq'.symm.trans (hwalkpath d hd)
+        exact determinantNumerator_coeff_eq_pathSum_of_minimal
+          (polynomial_add_self_zero' (V := V))
+          G s t hst a b hab z dStar d hd hmin
     }
 
 theorem first_nonzero_of_concrete_determinant
@@ -86,6 +49,14 @@ theorem first_nonzero_of_concrete_determinant
       walkSum' (G := G) (s := s) (t := t) (a := a) (b := b)
         (MvPolynomial.X : Sym2 V → MvPolynomial (Sym2 V) (ZMod 2)) dStar ≠ 0 := by
   obtain ⟨p, hpath, hlen, hmin⟩ := hshort
+  have hst : s ≠ t := by
+    intro heq
+    have hnil : p.Nil := hpath.1.nil_iff_eq.mpr heq
+    have hzero : p.length = 0 := hnil.length_eq_zero
+    have hcount : p.edges.count a ≤ p.edges.length :=
+      List.count_le_length
+    rw [hpath.2.1, p.length_edges, hzero] at hcount
+    omega
   have hshort' :
       IsShortestTargetPath (G := G) (s := s) (t := t)
         (a := a) (b := b) dStar :=
@@ -100,7 +71,47 @@ theorem first_nonzero_of_concrete_determinant
     (MvPolynomial.X : Sym2 V → MvPolynomial (Sym2 V) (ZMod 2))
     dStar hprevious
     (pathSum_X_ne_zero_of_shortest hshort')
-    (concreteDeterminantExpansionCertificate dStar hab hmin)
+    (concreteDeterminantExpansionCertificate dStar hst hab hmin)
+
+theorem walkSum_X_eq_zero_of_no_target_path_determinant
+    (hst : s ≠ t) (hab : a ≠ b)
+    (hno : ¬ ∃ p : G.Walk s t,
+      IsTargetPath (a := a) (b := b) p)
+    (d : ℕ) :
+    walkSum' (G := G) (s := s) (t := t) (a := a) (b := b)
+      (MvPolynomial.X : Sym2 V → MvPolynomial (Sym2 V) (ZMod 2)) d = 0 := by
+  let z : Sym2 V → MvPolynomial (Sym2 V) (ZMod 2) := MvPolynomial.X
+  have hmin : ∀ q : G.Walk s t,
+      IsTargetPath (a := a) (b := b) q → d ≤ q.length :=
+    fun q hq => False.elim (hno ⟨q, hq⟩)
+  let hdet := concreteDeterminantExpansionCertificate
+    (G := G) (s := s) (t := t) (a := a) (b := b) d hst hab hmin
+  have hnzero : ∀ k, k ≤ d → PowerSeries.coeff k hdet.numerator = 0 := by
+    intro k hk
+    rw [hdet.numerator_coeff k hk]
+    apply pathSum'_eq_zero_of_no_target_path z k
+    intro ⟨q, hq, _⟩
+    exact hno ⟨q, hq⟩
+  have hwzero : ∀ k, k ≤ d →
+      walkSum' (G := G) (s := s) (t := t)
+        (a := a) (b := b) z k = 0 := by
+    intro k
+    induction k using Nat.strong_induction_on with
+    | h k ih =>
+      intro hk
+      have hprev : ∀ j, j < k →
+          PowerSeries.coeff j
+            (seriesOf (walkSum' (G := G) (s := s) (t := t)
+              (a := a) (b := b) z)) = 0 := by
+        intro j hj
+        simpa [seriesOf] using ih j hj (by omega)
+      have hcoeff := coeff_eq_of_mul_eq_of_previous_zero
+        (seriesOf (walkSum' (G := G) (s := s) (t := t)
+          (a := a) (b := b) z))
+        hdet.denominator hdet.numerator k hdet.generating_identity
+        hdet.denominator_constant hprev
+      simpa [seriesOf] using hcoeff.trans (hnzero k hk)
+  exact hwzero d le_rfl
 
 end
 end TwoDoorsProof
