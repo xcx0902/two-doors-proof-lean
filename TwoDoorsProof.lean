@@ -6,3 +6,4 @@ import TwoDoorsProof.Palindrome
 import TwoDoorsProof.Contraction
 import TwoDoorsProof.Determinant
 import TwoDoorsProof.Shortest
+import TwoDoorsProof.Weights

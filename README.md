@@ -19,9 +19,12 @@ This project formalizes the proof architecture in `editorial.md`.
 - `TwoDoorsProof.Shortest`: first-layer lemmas and the concrete palindrome
   reversal certificate; the determinant/path expansion certificate is still
   an unconstructed assumption.
+- `TwoDoorsProof.Weights`: uniqueness of a simple path from its undirected-edge
+  multiset, its independent-variable monomial, and the nonzero first layer
+  supplied by the concrete palindrome-reversal proof.
 
-The full independent-edge-weight nonvanishing theorem and the complete
-determinant path/matching expansion are not yet formalized.
+The complete determinant path/matching expansion and the upstream planar-grid
+duality are not yet formalized.
 
 Build with:
 
