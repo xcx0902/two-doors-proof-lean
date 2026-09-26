@@ -40,7 +40,11 @@ This project formalizes the proof architecture in `editorial.md`.
   path lists, with an injective code into a finite sigma type.
 - `TwoDoorsProof.PermutationTerms`: a finite bijection between permutations
   satisfying `σ t = s` and a directed path list together with a permutation
-  of its complement; it also factors the corresponding Leibniz monomial.
+  of its complement; it factors the corresponding Leibniz monomial and sums
+  these terms over each path's complementary determinant.
+- `TwoDoorsProof.CofactorPaths`: the direct characteristic-two cofactor
+  expansion as a sum over simple path cycles and determinants of their
+  complementary principal submatrices.
 - `TwoDoorsProof.ConcreteDeterminant`: a fully constructed low-layer
   determinant certificate and the corresponding first-nonzero theorem.
 - `TwoDoorsProof.Shortest`: first-layer lemmas and the concrete palindrome
@@ -50,9 +54,9 @@ This project formalizes the proof architecture in `editorial.md`.
   multiset, its independent-variable monomial, and the nonzero first layer
   supplied by the concrete palindrome-reversal proof.
 
-The direct cofactor path/complement-matching sum identity is not yet
-formalized; the underlying finite bijection and monomial factorization are
-now formalized.
+The direct cofactor path/complement-determinant sum identity is formalized.
+The specialization of its path cycles to graph-walk edge weights and
+first-layer coefficient extraction is not yet formalized.
 The current concrete determinant certificate is proved from the already
 formalized palindrome-reversal cancellation at the low layers, while retaining
 the independent determinant generating identity. The upstream planar-grid

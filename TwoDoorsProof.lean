@@ -16,4 +16,5 @@ import TwoDoorsProof.DeterminantPaths
 import TwoDoorsProof.PathComplement
 import TwoDoorsProof.FintypePath
 import TwoDoorsProof.PermutationTerms
+import TwoDoorsProof.CofactorPaths
 import TwoDoorsProof.ConcreteDeterminant

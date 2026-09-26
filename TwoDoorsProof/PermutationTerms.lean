@@ -162,5 +162,41 @@ theorem permMonomial_eq_path_and_complement
         (pathOfPerm σ s t hst hts)
         (restrictedPerm σ s t hst hts)
 
+theorem marked_perm_sum_eq_path_complement_det
+    (h₂ : ∀ x : R, x + x = 0)
+    (A : Matrix V V R) (hst : s ≠ t) :
+    (∑ σ : markedPerm s t, permMonomial A σ.1) =
+      ∑ p : DirectedPathList s t,
+        cycleMonomial A p *
+          (A.submatrix
+            (fun x : {x : V // x ∉ p.list} => (x : V))
+            (fun x : {x : V // x ∉ p.list} => (x : V))).det := by
+  calc
+    (∑ σ : markedPerm s t, permMonomial A σ.1) =
+        ∑ p : Σ p : DirectedPathList s t, complementPerm p,
+          permMonomial A (pathComplementPerm p.1 p.2) := by
+            exact Fintype.sum_equiv (pathComplementEquiv (s := s) (t := t) hst)
+              (fun σ => permMonomial A σ.1)
+              (fun p => permMonomial A (pathComplementPerm p.1 p.2))
+              (by intro σ; simp [pathComplementEquiv, perm_eq_pathComplement])
+    _ = ∑ p : DirectedPathList s t,
+          ∑ τ : complementPerm p,
+            cycleMonomial A p * complementMonomial A p τ := by
+          rw [Fintype.sum_sigma]
+          congr 1
+          funext p
+          congr 1
+          funext τ
+          exact permMonomial_pathComplement A p τ
+    _ = ∑ p : DirectedPathList s t,
+          cycleMonomial A p *
+            (A.submatrix
+              (fun x : {x : V // x ∉ p.list} => (x : V))
+              (fun x : {x : V // x ∉ p.list} => (x : V))).det := by
+          apply Fintype.sum_congr
+          intro p
+          rw [det_eq_perm_sum_charTwo h₂, Finset.mul_sum]
+          rfl
+
 end
 end TwoDoorsProof
