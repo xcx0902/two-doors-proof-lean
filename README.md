@@ -16,6 +16,13 @@ This project formalizes the proof architecture in `editorial.md`.
   scan finds no non-palindromic interval.
 - `TwoDoorsProof.Determinant`: the marked directed-edge determinant identity
   and cancellation of non-involutive permutation terms by inversion.
+- `TwoDoorsProof.Marked`: two independent square-zero markers, edge-weight
+  products and extraction of the coefficient that counts walks using each
+  special edge exactly once.
+- `TwoDoorsProof.MatrixWalk`: weighted adjacency matrix powers enumerate
+  all fixed-length walks, including their formal-marker weights.
+- `TwoDoorsProof.MatrixSeries`: the formal matrix geometric series and the
+  adjugate identity relating its entries to a determinant and cofactor.
 - `TwoDoorsProof.Shortest`: first-layer lemmas and the concrete palindrome
   reversal certificate; the determinant/path expansion certificate is still
   an unconstructed assumption.
@@ -23,8 +30,9 @@ This project formalizes the proof architecture in `editorial.md`.
   multiset, its independent-variable monomial, and the nonzero first layer
   supplied by the concrete palindrome-reversal proof.
 
-The complete determinant path/matching expansion and the upstream planar-grid
-duality are not yet formalized.
+The determinant path/matching expansion, its resulting concrete certificate,
+and the upstream planar-grid duality are not yet formalized. In particular,
+the current matrix identities alone do not complete the second proof.
 
 Build with:
 

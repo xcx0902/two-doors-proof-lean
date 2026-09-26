@@ -7,3 +7,6 @@ import TwoDoorsProof.Contraction
 import TwoDoorsProof.Determinant
 import TwoDoorsProof.Shortest
 import TwoDoorsProof.Weights
+import TwoDoorsProof.Marked
+import TwoDoorsProof.MatrixWalk
+import TwoDoorsProof.MatrixSeries
