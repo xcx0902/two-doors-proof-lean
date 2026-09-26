@@ -32,6 +32,10 @@ This project formalizes the proof architecture in `editorial.md`.
   target-walk series, ordinary denominator, and marked cofactor numerator.
 - `TwoDoorsProof.DeterminantPaths`: explicit list-level facts for the
   permutation cycle containing the added directed edge.
+- `TwoDoorsProof.PathComplement`: a fully proved decomposition of a
+  permutation with `σ t = s` into the distinguished simple cycle
+  `s → ... → t → s` and an independent permutation on the complementary
+  vertex subtype.
 - `TwoDoorsProof.ConcreteDeterminant`: a fully constructed low-layer
   determinant certificate and the corresponding first-nonzero theorem.
 - `TwoDoorsProof.Shortest`: first-layer lemmas and the concrete palindrome

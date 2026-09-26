@@ -13,4 +13,5 @@ import TwoDoorsProof.MatrixSeries
 import TwoDoorsProof.DeterminantMatching
 import TwoDoorsProof.DeterminantGenerating
 import TwoDoorsProof.DeterminantPaths
+import TwoDoorsProof.PathComplement
 import TwoDoorsProof.ConcreteDeterminant
