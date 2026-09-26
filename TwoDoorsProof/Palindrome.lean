@@ -154,6 +154,27 @@ private theorem lastIndex?_getElem {a : α} :
             simp
           · simp [hax] at h
 
+theorem lastIndex?_some_iff {a : α} {l : List α} {k : ℕ} :
+    lastIndex? a l = some k ↔
+      k < l.length ∧ l[k]? = some a ∧ a ∉ l.drop (k + 1) := by
+  constructor
+  · intro h
+    obtain ⟨pre, suf, rfl, hnot, rfl⟩ := lastIndex?_spec.mp h
+    simp only [List.length_append, List.length_cons, List.length_nil]
+    refine ⟨by omega, ?_, ?_⟩
+    · simp
+    · simpa using hnot
+  · rintro ⟨hk, hget, hnot⟩
+    have hval : l[k]'hk = a := by
+      rw [← Option.some_inj, ← List.getElem?_eq_getElem hk]
+      exact hget
+    have hsplit : l = l.take k ++ [a] ++ l.drop (k + 1) := by
+      rw [← hval]
+      conv_lhs => rw [← List.take_append_drop (k + 1) l]
+      rw [List.take_succ_eq_append_getElem hk]
+    exact lastIndex?_spec.mpr ⟨l.take k, l.drop (k + 1), hsplit,
+      hnot, by simp [List.length_take, Nat.min_eq_left (Nat.le_of_lt hk)]⟩
+
 /-! Scan from left to right. A palindromic first-to-last loop is skipped, while
 the first non-palindromic such loop is returned. The recursion measure is the
 number of original list entries at or after the current position. -/
@@ -292,6 +313,109 @@ theorem reverseInterval_drop_perm
   have hprefix := reverseInterval_prefix (l := l) (p := p) (q := q) hp
   have hopt := congrArg (fun xs : List α => xs[j]?) hprefix
   simpa [List.getElem?_take, hj, Nat.lt_of_lt_of_le hj hn] using hopt
+
+private theorem lastIndex?_none_preserved_before
+    {l l' : List α} {i r : ℕ} (hi : i < r) (hir : r ≤ l.length)
+    (hlen : l'.length = l.length)
+    (hprefix : ∀ j, j < r → l'[j]? = l[j]?)
+    (hperm : ∀ n, n ≤ r → List.Perm (l'.drop n) (l.drop n))
+    (hidx : lastIndex? l[i] (l.drop (i + 1)) = none) :
+    lastIndex? l'[i] (l'.drop (i + 1)) = none := by
+  have hli : i < l.length := by omega
+  have hli' : i < l'.length := by omega
+  have hval : l'[i] = l[i] := by
+    have h := hprefix i hi
+    rw [List.getElem?_eq_getElem hli', List.getElem?_eq_getElem hli] at h
+    exact Option.some.inj h
+  rw [hval]
+  apply lastIndex?_none_iff.mpr
+  intro hmem
+  apply lastIndex?_none_iff.mp hidx
+  exact (hperm (i + 1) (by omega)).mem_iff.mp hmem
+
+private theorem lastIndex?_some_preserved_before
+    {l l' : List α} {i r k : ℕ} (hi : i < r) (hir : r ≤ l.length)
+    (hj : i + 1 + k < r)
+    (hlen : l'.length = l.length)
+    (hprefix : ∀ j, j < r → l'[j]? = l[j]?)
+    (hperm : ∀ n, n ≤ r → List.Perm (l'.drop n) (l.drop n))
+    (hidx : lastIndex? l[i] (l.drop (i + 1)) = some k) :
+    lastIndex? l'[i] (l'.drop (i + 1)) = some k := by
+  have hli : i < l.length := by omega
+  have hli' : i < l'.length := by omega
+  have hval : l'[i] = l[i] := by
+    have h := hprefix i hi
+    rw [List.getElem?_eq_getElem hli', List.getElem?_eq_getElem hli] at h
+    exact Option.some.inj h
+  rw [hval]
+  have ho := lastIndex?_some_iff.mp hidx
+  have hj' : i + 1 + k < l'.length := by omega
+  apply lastIndex?_some_iff.mpr
+  refine ⟨by simp only [List.length_drop]; omega, ?_, ?_⟩
+  · have hopt := hprefix (i + 1 + k) hj
+    have hshift : (l'.drop (i + 1))[k]? = l'[i + 1 + k]? := by
+      simp [List.getElem?_drop]
+    rw [hshift, hopt]
+    simpa [List.getElem?_drop, Nat.add_assoc] using ho.2.1
+  · have hsuf : (l'.drop (i + 1)).drop (k + 1) =
+        l'.drop (i + 1 + k + 1) := by
+      rw [List.drop_drop]
+      congr 1
+    rw [hsuf]
+    intro hmem
+    have hmem' : l[i] ∈ l.drop (i + 1 + k + 1) :=
+      (hperm (i + 1 + k + 1) (by omega)).mem_iff.mp hmem
+    apply ho.2.2
+    simpa [List.drop_drop, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using hmem'
+
+private theorem lastIndex?_some_preserved_endpoints
+    {l l' : List α} {i q k : ℕ}
+    (hi : i < l.length) (hi' : i < l'.length) (hqi : q = i + 1 + k)
+    (hleft : l'[i]? = l[i]?) (hright : l'[q]? = l[q]?)
+    (hsuffix : l'.drop (q + 1) = l.drop (q + 1))
+    (hidx : lastIndex? l[i] (l.drop (i + 1)) = some k) :
+    lastIndex? l'[i] (l'.drop (i + 1)) = some k := by
+  have ho := lastIndex?_some_iff.mp hidx
+  have hqi_len : q < l.length := by
+    simp only [List.length_drop] at ho
+    omega
+  have hright_val : l'[q]? = some l[i] := by
+    rw [hright]
+    simpa [List.getElem?_drop, hqi, Nat.add_assoc] using ho.2.1
+  have hqi_len' : q < l'.length := by
+    by_contra h
+    have : l'[q]? = none := List.getElem?_eq_none (by omega)
+    rw [this] at hright_val
+    contradiction
+  have hleft_val : l'[i] = l[i] := by
+    rw [List.getElem?_eq_getElem hi',
+      List.getElem?_eq_getElem hi] at hleft
+    exact Option.some.inj hleft
+  rw [hleft_val]
+  apply lastIndex?_some_iff.mpr
+  refine ⟨by simp only [List.length_drop]; omega, ?_, ?_⟩
+  · simpa [List.getElem?_drop, hqi, Nat.add_assoc] using hright_val
+  · have hnot : l[i] ∉ l.drop (q + 1) := by
+      simpa [List.drop_drop, hqi, Nat.add_assoc, Nat.add_comm,
+        Nat.add_left_comm] using ho.2.2
+    have heq : i + 1 + (k + 1) = q + 1 := by omega
+    simpa [List.drop_drop, heq, hsuffix] using hnot
+
+private theorem intervalSegment_eq_of_prefix
+    {l l' : List α} {p q r : ℕ}
+    (hpq : p ≤ q) (hqr : q < r) (hr : r ≤ l.length)
+    (hlen : l'.length = l.length)
+    (hprefix : ∀ j, j < r → l'[j]? = l[j]?) :
+    intervalSegment l' p q = intervalSegment l p q := by
+  have hq : q < l.length := by omega
+  have hq' : q < l'.length := by omega
+  apply List.ext_getElem?
+  intro j
+  by_cases hj : j < q - p + 1
+  · have heq := hprefix (p + j) (by omega)
+    simpa [intervalSegment, List.getElem?_take, List.getElem?_drop, hj,
+      Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using heq
+  · simp [intervalSegment, List.getElem?_take, hj]
 
 private theorem intervalSegment_eq_of_lastIndex
     {l : List α} {p k : ℕ} (hp : p < l.length)
@@ -437,6 +561,101 @@ theorem scanNonpal_result_endpoint
       · rw [scanNonpal.eq_1] at hscan
         exact False.elim (by simpa [hp] using hscan)
 
+theorem scanNonpal_stable
+    {l l' : List α} {start r q : ℕ}
+    (hscan : scanNonpal l start = some (r, q))
+    (hlen : l'.length = l.length)
+    (hprefix : ∀ j, j < r → l'[j]? = l[j]?)
+    (hperm : ∀ n, n ≤ r → List.Perm (l'.drop n) (l.drop n))
+    (hleft : l'[r]? = l[r]?)
+    (hright : l'[q]? = l[q]?)
+    (hsuffix : l'.drop (q + 1) = l.drop (q + 1))
+    (hsegment : intervalSegment l' r q = (intervalSegment l r q).reverse) :
+    scanNonpal l' start = some (r, q) := by
+  suffices h : ∀ i, scanNonpal l i = some (r, q) →
+      scanNonpal l' i = some (r, q) from h start hscan
+  intro i
+  induction hm : l.length - i using Nat.strong_induction_on generalizing i with
+  | h m ih =>
+      intro hcur
+      have hdata := scanNonpal_result_endpoint hcur
+      have hi : i < l.length := by omega
+      have hi' : i < l'.length := by omega
+      rw [scanNonpal.eq_1] at hcur ⊢
+      simp only [hi, hi', ↓reduceDIte] at hcur ⊢
+      cases hidx : lastIndex? l[i] (l.drop (i + 1)) with
+      | none =>
+          have hir : i < r := by
+            have hrec : scanNonpal l (i + 1) = some (r, q) := by
+              simpa [hidx] using hcur
+            exact Nat.lt_of_lt_of_le (Nat.lt_succ_self i)
+              (scanNonpal_result hrec).1
+          have hidx' := lastIndex?_none_preserved_before hir (by omega)
+            hlen hprefix hperm hidx
+          have hrec : scanNonpal l (i + 1) = some (r, q) := by
+            simpa [hidx] using hcur
+          simp only [hidx']
+          exact ih (l.length - (i + 1)) (by omega) (i + 1) rfl hrec
+      | some k =>
+          let j := i + 1 + k
+          by_cases hpal : (intervalSegment l i j).reverse = intervalSegment l i j
+          · have hrec : scanNonpal l (j + 1) = some (r, q) := by
+              have hpal0 :
+                  (List.take (i + 1 + k - i + 1) (List.drop i l)).reverse =
+                    List.take (i + 1 + k - i + 1) (List.drop i l) := by
+                simpa only [intervalSegment, j] using hpal
+              simp only [hidx] at hcur
+              rw [if_pos hpal0] at hcur
+              simpa only [j] using hcur
+            have hjr : j < r := by
+              have := (scanNonpal_result hrec).1
+              omega
+            have hir : i < r := by omega
+            have hidx' := lastIndex?_some_preserved_before hir (by omega)
+              (by dsimp [j] at hjr; omega) hlen hprefix hperm hidx
+            have hseg := intervalSegment_eq_of_prefix (p := i) (q := j)
+              (r := r) (by dsimp [j]; omega) hjr (by omega)
+              hlen hprefix
+            have hpal' : (intervalSegment l' i j).reverse =
+                intervalSegment l' i j := by simpa [hseg] using hpal
+            simp only [hidx']
+            have hlt : l.length - (j + 1) < m := by
+              dsimp [j]
+              omega
+            have hpal0' :
+                (List.take (i + 1 + k - i + 1) (List.drop i l')).reverse =
+                  List.take (i + 1 + k - i + 1) (List.drop i l') := by
+              simpa only [intervalSegment, j] using hpal'
+            rw [if_pos hpal0']
+            simpa only [j] using
+              ih (l.length - (j + 1)) hlt (j + 1) rfl hrec
+          · have hdirect : some (i, j) = some (r, q) := by
+              have hpal0 :
+                  (List.take (i + 1 + k - i + 1) (List.drop i l)).reverse ≠
+                    List.take (i + 1 + k - i + 1) (List.drop i l) := by
+                simpa only [intervalSegment, j] using hpal
+              simp only [hidx] at hcur
+              rw [if_neg hpal0] at hcur
+              simpa only [j] using hcur
+            have hp : i = r := congrArg Prod.fst (Option.some.inj hdirect)
+            have hq : j = q := congrArg Prod.snd (Option.some.inj hdirect)
+            subst r
+            subst q
+            have hidx' := lastIndex?_some_preserved_endpoints hi hi'
+              (show j = i + 1 + k from rfl) hleft hright hsuffix hidx
+            have hnot : (intervalSegment l' i j).reverse ≠
+                intervalSegment l' i j := by
+              intro heq
+              rw [hsegment] at heq
+              apply hpal
+              simpa using heq.symm
+            have hpal0' :
+                (List.take (i + 1 + k - i + 1) (List.drop i l')).reverse ≠
+                  List.take (i + 1 + k - i + 1) (List.drop i l') := by
+              simpa only [intervalSegment, j] using hnot
+            simp only [hidx', if_neg hpal0']
+            rfl
+
 end LastIndex
 
 section WalkIntervals
@@ -516,6 +735,28 @@ theorem flipWalkAt_support (w : G.Walk s t) (p q : ℕ)
   rw [Walk.drop_support_eq_support_drop_min, Nat.min_eq_left hq, List.tail_drop]
   simp only [reverseInterval, List.append_assoc]
 
+theorem flipWalkAt_getVert_left (w : G.Walk s t) (p q : ℕ)
+    (hpq : p ≤ q) (hq : q ≤ w.length)
+    (hclosed : w.getVert p = w.getVert q) :
+    (flipWalkAt w p q hpq hclosed).getVert p = w.getVert p := by
+  let pre := w.take p
+  let loop : G.Walk (w.getVert p) (w.getVert p) :=
+    (intervalWalk w p q hpq).copy rfl hclosed.symm
+  let suffix : G.Walk (w.getVert p) t :=
+    (w.drop q).copy hclosed.symm rfl
+  have hpre : pre.length = p := by
+    dsimp [pre]
+    rw [Walk.take_length, Nat.min_eq_left (by omega)]
+  have hloop : loop.length = q - p := by
+    dsimp [loop]
+    rw [Walk.length_copy, intervalWalk_length w p q hpq hq]
+  have hsum : (pre.append loop.reverse).length = q := by
+    simp [hpre, hloop]
+    omega
+  change ((pre.append loop.reverse).append suffix).getVert p = w.getVert p
+  rw [Walk.getVert_append']
+  simp [Walk.getVert_append', hpre, hsum, pre] <;> omega
+
 theorem flipWalkAt_closed (w : G.Walk s t) (p q : ℕ)
     (hpq : p < q) (hq : q ≤ w.length)
     (hclosed : w.getVert p = w.getVert q) :
@@ -537,9 +778,7 @@ theorem flipWalkAt_closed (w : G.Walk s t) (p q : ℕ)
     omega
   have hleft :
       (flipWalkAt w p q hpq.le hclosed).getVert p = w.getVert p := by
-    change ((pre.append loop.reverse).append suffix).getVert p = w.getVert p
-    rw [Walk.getVert_append']
-    simp [Walk.getVert_append', hpre, hsum, pre] <;> omega
+    exact flipWalkAt_getVert_left w p q hpq.le hq hclosed
   have hright :
       (flipWalkAt w p q hpq.le hclosed).getVert q = w.getVert p := by
     change ((pre.append loop.reverse).append suffix).getVert q = w.getVert p
@@ -624,6 +863,82 @@ theorem flipWalkAt_weight {R : Type*} [CommMonoid R] (z : Sym2 V → R)
     rw [← hd, List.append_assoc, List.take_append_drop, List.take_append_drop]
   simpa [List.map_append, List.prod_append, mul_assoc] using
     congrArg (fun l : List (Sym2 V) => (l.map z).prod) hsplit
+
+theorem scanned_interval_data [DecidableEq V] (w : G.Walk s t)
+    {p q : ℕ} (hscan : scanNonpal w.support 0 = some (p, q)) :
+    p < q ∧ q ≤ w.length ∧
+      w.getVert p = w.getVert q ∧
+      (intervalSegment w.support p q).reverse ≠
+        intervalSegment w.support p q := by
+  have hn := scanNonpal_result hscan
+  have he := scanNonpal_result_endpoint hscan
+  have hp : p ≤ w.length := by
+    rw [Walk.length_support] at he
+    omega
+  have hq : q ≤ w.length := by
+    rw [Walk.length_support] at he
+    omega
+  have hclosed : w.getVert p = w.getVert q := by
+    have hleft := w.getVert_eq_support_getElem? hp
+    have hright := w.getVert_eq_support_getElem? hq
+    rw [← hleft, ← hright] at he
+    exact Option.some.inj he.2.2.2
+  exact ⟨hn.2.1, hq, hclosed, hn.2.2⟩
+
+theorem scanNonpal_flipWalkAt [DecidableEq V]
+    (w : G.Walk s t) {p q : ℕ}
+    (hscan : scanNonpal w.support 0 = some (p, q)) :
+    scanNonpal
+      (flipWalkAt w p q (scanned_interval_data w hscan).1.le
+        (scanned_interval_data w hscan).2.2.1).support 0 =
+      some (p, q) := by
+  obtain ⟨hpq, hq, hclosed, _⟩ := scanned_interval_data w hscan
+  let w' := flipWalkAt w p q hpq.le hclosed
+  have hlen : w'.support.length = w.support.length := by
+    rw [Walk.length_support, Walk.length_support,
+      flipWalkAt_length w p q hpq.le hq hclosed]
+  have hq' : q < w.support.length := by rw [Walk.length_support]; omega
+  have hpre : ∀ j, j < p → w'.support[j]? = w.support[j]? := by
+    intro j hj
+    have h := reverseInterval_prefix (l := w.support) (p := p) (q := q)
+      (by omega)
+    rw [← flipWalkAt_support w p q hpq.le hq hclosed] at h
+    have heq := congrArg (fun l : List V => l[j]?) h
+    simpa [List.getElem?_take, hj] using heq
+  have hperm : ∀ n, n ≤ p →
+      List.Perm (w'.support.drop n) (w.support.drop n) := by
+    intro n hn
+    rw [flipWalkAt_support w p q hpq.le hq hclosed]
+    exact reverseInterval_drop_perm hpq.le hq' hn
+  have hleft : w'.support[p]? = w.support[p]? := by
+    have hp : p ≤ w.length := by omega
+    have hp' : p ≤ w'.length := by
+      rw [flipWalkAt_length w p q hpq.le hq hclosed]
+      exact hp
+    rw [← w'.getVert_eq_support_getElem? hp',
+      ← w.getVert_eq_support_getElem? hp]
+    exact congrArg some (flipWalkAt_getVert_left w p q hpq.le hq hclosed)
+  have hright : w'.support[q]? = w.support[q]? := by
+    have hq'' : q ≤ w'.length := by
+      rw [flipWalkAt_length w p q hpq.le hq hclosed]
+      exact hq
+    rw [← w'.getVert_eq_support_getElem? hq'',
+      ← w.getVert_eq_support_getElem? hq]
+    congr 1
+    calc
+      w'.getVert q = w'.getVert p :=
+        (flipWalkAt_closed w p q hpq hq hclosed).symm
+      _ = w.getVert p := flipWalkAt_getVert_left w p q hpq.le hq hclosed
+      _ = w.getVert q := hclosed
+  have hsuffix : w'.support.drop (q + 1) =
+      w.support.drop (q + 1) := by
+    rw [flipWalkAt_support w p q hpq.le hq hclosed]
+    exact reverseInterval_suffix hpq.le hq'
+  have hsegment : intervalSegment w'.support p q =
+      (intervalSegment w.support p q).reverse := by
+    rw [flipWalkAt_support w p q hpq.le hq hclosed]
+    exact reverseInterval_middle hpq.le hq'
+  exact scanNonpal_stable hscan hlen hpre hperm hleft hright hsuffix hsegment
 
 end WalkIntervals
 

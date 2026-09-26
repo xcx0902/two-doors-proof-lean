@@ -1,4 +1,5 @@
 import TwoDoorsProof.WalkSum
+import TwoDoorsProof.Palindrome
 import Mathlib.RingTheory.PowerSeries.Basic
 
 /-!
@@ -32,6 +33,21 @@ def pathSum' [CommRing R] (z : Sym2 V → R) (d : ℕ) : R :=
 
 def walkSum' [CommRing R] (z : Sym2 V → R) (d : ℕ) : R :=
   ∑ p ∈ targetWalks G s t a b d, walkWeight G s t z p
+
+theorem not_isPath_of_repeated_getVert
+    {p : G.Walk s t} {i j : ℕ} (hi : i ≤ p.length) (hj : j ≤ p.length)
+    (hij : i < j)
+    (heq : p.getVert i = p.getVert j) : ¬p.IsPath := by
+  intro hpath
+  have hsupport := hpath.support_nodup
+  have hget :
+      p.support[i]'(p.length_support ▸ Nat.lt_add_one_of_le hi) =
+        p.support[j]'(p.length_support ▸ Nat.lt_add_one_of_le hj) := by
+    rw [p.support_getElem_eq_getVert, p.support_getElem_eq_getVert]
+    exact heq
+  exact (Nat.ne_of_lt hij) (hsupport.eq_of_getElem_eq
+    (p.length_support ▸ Nat.lt_add_one_of_le hi)
+    (p.length_support ▸ Nat.lt_add_one_of_le hj) hget)
 
 structure InvolutionCertificate [CommRing R] (z : Sym2 V → R) (d : ℕ) where
   pair : ∀ p ∈ targetNonpaths G s t a b d, G.Walk s t
